@@ -1,6 +1,43 @@
 import numpy as np
 import scipy.optimize as spo
 
+class Neutral(object):
+    """A nonreactive ion class.
+
+    This object defines things like K+ and Cl-, which contribute to the
+    overall charge balance, but do not have any inherent reactivity with
+    water.
+    
+    Parameters
+    ----------
+    charge : The formal charge of the ion.
+    conc : The concentration of this species in solution.
+
+    """
+    def __init__(self, charge=None, conc=None):
+        if charge == None:
+            raise ValueError(
+                "The charge for this ion must be defined.")
+
+        self.charge = charge 
+        self.conc = conc
+
+    def alpha(self, pH):
+        '''Return the fraction of each species at a given pH.
+
+        Because this is a non-reactive ion class, this will always return a
+        Numpy array containing just 1.0 for all pH values.
+
+        '''
+        if isinstance(pH, (int, float)):
+            length = 1
+        else:
+            length = len(pH)
+        ones = np.ones(length).reshape(-1,1)
+        return ones
+
+
+        
 class Acid(object):
     '''An object used to define an acidic species.
 
@@ -103,43 +140,7 @@ class Acid(object):
             den = h3o_Ka.sum()
             return h3o_Ka/den
 
-class Neutral(object):
-    """A nonreactive ion class.
 
-    This object defines things like K+ and Cl-, which contribute to the
-    overall charge balance, but do not have any inherent reactivity with
-    water.
-    
-    Parameters
-    ----------
-    charge : The formal charge of the ion.
-    conc : The concentration of this species in solution.
-
-    """
-    def __init__(self, charge=None, conc=None):
-        if charge == None:
-            raise ValueError(
-                "The charge for this ion must be defined.")
-
-        self.charge = charge 
-        self.conc = conc
-
-    def alpha(self, pH):
-        '''Return the fraction of each species at a given pH.
-
-        Because this is a non-reactive ion class, this will always return a
-        Numpy array containing just 1.0 for all pH values.
-
-        '''
-        if isinstance(pH, (int, float)):
-            length = 1
-        else:
-            length = len(pH)
-        ones = np.ones(length).reshape(-1,1)
-        return ones
-
-
-        
 class System(object):
     '''An object used to define an a system of acid and neutral species.
 
