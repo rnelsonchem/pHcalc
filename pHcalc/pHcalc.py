@@ -60,26 +60,37 @@ class Neutral(object):
 
         
 class Acid(object):
-    '''An object used to define an acidic species.
+    '''An acidic species class.
 
-    This object takes the Ka and/or pKa values for an acidic species, its
-    charge in the fully protonated, and its concentration in solution. Using
-    this information, it can then calculate several properties of this species
-    in solution.
-
+    This object is used to calculate a number of parameters related to a weak
+    acid in an aqueous solution. 
+    
     Parameters
     ----------
-    Ka = None : This is a single Ka value or an iterable of several Ka values.
-    Either this value or pKa needs to be defined. The other can then be
-    calculated, which is the preferred method.
+    Ka : None (default), float, list, Numpy Array
+        This defines the Ka values for all acidic protons in this species. It
+        can be a single Ka value (float), a list of floats, or a Numpy array
+        of floats. Either this value or pKa needs to be defined. The other
+        will then be calculated from the given values.
 
-    pKa = None : This is a single pKa value or an iterable of several pKa
-    values. See Ka for more details.
+    pKa : None (default), float, list, Numpy Array
+        The pKa value(s) for all the acidic protons in this species.  This
+        follows the same rules as Ka (See Ka description for more details),
+        and either this value or Ka must be defined.
 
-    charge = None : This is the charge of the fully protonated form of this
-    acid.
+    charge : None (default), int
+        This is the charge of the fully protonated form of this acid. This
+        must be defined.
 
-    conc = None : The formal concentration of this acid in solution.
+    conc : None (default), float
+        The formal concentration of this acid in solution. This value must be
+        defined.
+
+    Note
+    ----
+    There is no corresponding Base object. To define a base, you must use a
+    combination of an Acid and Neutral object. See the documentation for
+    examples.
 
     '''
     def __init__(self, Ka=None, pKa=None, charge=None, conc=None):
@@ -123,10 +134,20 @@ class Acid(object):
     def alpha(self, pH):
         '''Return the fraction of each species at a given pH.
 
-        This returns a Numpy list of fractional speciation at a given
-        solution. The returned list will be ordered as per the Ka/pKa values,
-        with the most acidic component listed first.
+        Parameters
+        ----------
+        pH : int, float, or Numpy Array
+            These are the pH value(s) over which the fraction should be
+            returned.
 
+        Returns
+        -------
+        Numpy NDArray
+            These are the fractional concentrations at any given pH. They are
+            sorted from most acidic species to least acidic species. If a
+            NDArray of pH values is provided, then a 2D array will be
+            returned. In this case, each row represents the speciation for
+            each given pH.
         '''
         # If the given pH is not a list/array, be sure to convert it to one
         # for future calcs.
