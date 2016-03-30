@@ -187,37 +187,51 @@ class System(object):
     '''An object used to define an a system of acid and neutral species.
 
     This object accepts an arbitrary number of acid and neutral species
-    objects and calculates the pH of the system. 
-
-    The objects need to completely define the system. All weak species are
-    input as their fully protonated acidic form as an Acid object. Any neutral
-    ions are accounted for by the appropriate Neutral objects. For example,
-    NaHCO3 would be desribed by an Acid object for H2CO3 and a Neutral object
-    for Na+, and both of these objects would have the same initial
-    concentrations.
-
-    The pH solving is done using a simple minimization algorithm which
-    minimizes the difference in the total positive and negative ion
-    concentrations in the system. A good initial guess will help here, and it
-    can be set manually using the 'guess' keyword. There is an automated
-    method that can be run as well if you set the guess_est argument. This
-    will override whatever you pass is for 'guess'. The 'est_num' keyword sets
-    the number of data points that you'd like to use for finding the guess
-    estimate. Too few points might start you pretty far from a good spot; too
-    many points is probably overkill and won't help much. This may or may not
-    speed things up.
+    objects and uses these to calculate the pH of the system. Be sure to
+    include all of the species that completely define the contents of a
+    particular solution.
 
     Parameters
     ----------
-    *species : These are the Acid and Neutral objects that you'd like to use
-    to define your system.
+    *species 
+        These are any number of Acid and Neutral objects that you'd like to
+        use to define your system.
 
+    Attibutes
+    ---------
+    species : list
+        This is a list containing all of the species that you input.
+
+    pHsolution 
+        This is the full minimization output, which is defined by the function
+        scipy.optimize.minimize. This is only available after running the
+        pHsolve method.
+
+    pH : float
+        The pH of this particular system. This is only calculated after
+        running the pHsolve method.
     '''
     def __init__(self, *species):
         self.species = species
 
 
     def _diff_pos_neg(self, pH):
+        '''Calculate the charge balance difference.
+
+        Parameters
+        ----------
+        pH : int, float, or Numpy Array
+            The pH value(s) used to calculate the different distributions of
+            positive and negative species.
+
+        Returns
+        -------
+        float or Numpy Array
+            The absolute value of the difference in concentration between the
+            positive and negatively charged species in the system. A float is
+            returned if an int or float is input as the pH: a Numpy array is
+            returned if an array of pH values is used as the input.
+        '''
         twoD = True
         if isinstance(pH, (int, float)) or pH.shape[0] == 1:
             twoD = False
@@ -242,6 +256,48 @@ class System(object):
 
     def pHsolve(self, guess=7.0, guess_est=False, est_num=1500, 
                 method='Nelder-Mead', tol=1e-5):
+        '''Solve the pH of the system.
+
+        The pH solving is done using a simple minimization algorithm which
+        minimizes the difference in the total positive and negative ion
+        concentrations in the system. The minimization algorithm can be
+        adjusted using the `method` keyword argument. The available methods
+        can be found in the documentation for the scipy.optimize.minimize
+        function.
+        
+        A good initial guess may help the minimization. It can be set manually
+        using the `guess` keyword, which defaults to 7.0. There is an
+        automated method that can be run as well if you set the `guess_est`
+        argument. This will override whatever you pass is for `guess`. The
+        `est_num` keyword sets the number of data points that you'd like to
+        use for finding the guess estimate. Too few points might start you
+        pretty far from the actual minimum; too many points is probably
+        overkill and won't help much. This may or may not speed things up.
+
+        Parameters
+        ----------
+
+        guess : float (default 7.0)
+            This is used as the initial guess of the pH for the system. 
+
+        guess_est : bool (default False)
+            Run a simple algorithm to determine a best guess for the initial
+            pH of the solution. This may or may not slow down the calculation
+            of the pH.
+
+        est_num : int (default 1500)
+            The number of data points to use in the pH guess estimation.
+            Ignored unless `guess_est=True`.
+
+        method : str (default 'Nelder-Mead')
+            The minimization method used to find the pH. The possible values
+            for this variable are defined in the documentation for the
+            scipy.optimize.minimize function.
+
+        tol : float (default 1e-5)
+            The tolerance used to determine convergence of the minimization
+            function.
+        '''
         if guess_est == True:
             phs = np.linspace(0, 14, est_num)
             guesses = self._diff_pos_neg(phs)
