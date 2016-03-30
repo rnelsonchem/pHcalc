@@ -1,27 +1,96 @@
 import numpy as np
 import scipy.optimize as spo
 
-class Acid(object):
-    '''An object used to define an acidic species.
+class Neutral(object):
+    """A nonreactive ion class.
 
-    This object takes the Ka and/or pKa values for an acidic species, its
-    charge in the fully protonated, and its concentration in solution. Using
-    this information, it can then calculate several properties of this species
-    in solution.
-
+    This object defines things like K+ and Cl-, which contribute to the
+    overall charge balance, but do not have any inherent reactivity with
+    water.
+    
     Parameters
     ----------
-    Ka = None : This is a single Ka value or an iterable of several Ka values.
-    Either this value or pKa needs to be defined. The other can then be
-    calculated, which is the preferred method.
+    charge : int
+        The formal charge of the ion.
 
-    pKa = None : This is a single pKa value or an iterable of several pKa
-    values. See Ka for more details.
+    conc : float
+        The concentration of this species in solution.
 
-    charge = None : This is the charge of the fully protonated form of this
-    acid.
+    Attributes
+    ----------
+    charge : int
+        The formal charge of the ion.
 
-    conc = None : The formal concentration of this acid in solution.
+    conc : float
+        The concentration of this species in solution.
+
+    """
+    def __init__(self, charge=None, conc=None):
+        if charge == None:
+            raise ValueError(
+                "The charge for this ion must be defined.")
+
+        self.charge = charge 
+        self.conc = conc
+
+    def alpha(self, pH):
+        '''Return the fraction of each species at a given pH.
+
+        Parameters
+        ----------
+        pH : int, float, or Numpy Array
+            These are the pH value(s) over which the fraction should be
+            returned.
+
+        Returns
+        -------
+        Numpy NDArray
+            Because this is a non-reactive ion class, this function will
+            always return a Numpy array containing just 1.0's for all pH
+            values.
+
+        '''
+        if isinstance(pH, (int, float)):
+            length = 1
+        else:
+            length = len(pH)
+        ones = np.ones(length).reshape(-1,1)
+        return ones
+
+
+        
+class Acid(object):
+    '''An acidic species class.
+
+    This object is used to calculate a number of parameters related to a weak
+    acid in an aqueous solution. 
+    
+    Parameters
+    ----------
+    Ka : None (default), float, list, Numpy Array
+        This defines the Ka values for all acidic protons in this species. It
+        can be a single Ka value (float), a list of floats, or a Numpy array
+        of floats. Either this value or pKa needs to be defined. The other
+        will then be calculated from the given values.
+
+    pKa : None (default), float, list, Numpy Array
+        The pKa value(s) for all the acidic protons in this species.  This
+        follows the same rules as Ka (See Ka description for more details),
+        and either this value or Ka must be defined.
+
+    charge : None (default), int
+        This is the charge of the fully protonated form of this acid. This
+        must be defined.
+
+    conc : None (default), float
+        The formal concentration of this acid in solution. This value must be
+        defined.
+
+    Note
+    ----
+    There is no corresponding Base object. To define a base, you must use a
+    combination of an Acid and Neutral object. See the documentation for
+    examples.
 
     '''
     def __init__(self, Ka=None, pKa=None, charge=None, conc=None):
@@ -65,10 +134,20 @@ class Acid(object):
     def alpha(self, pH):
         '''Return the fraction of each species at a given pH.
 
-        This returns a Numpy list of fractional speciation at a given
-        solution. The returned list will be ordered as per the Ka/pKa values,
-        with the most acidic component listed first.
+        Parameters
+        ----------
+        pH : int, float, or Numpy Array
+            These are the pH value(s) over which the fraction should be
+            returned.
 
+        Returns
+        -------
+        Numpy NDArray
+            These are the fractional concentrations at any given pH. They are
+            sorted from most acidic species to least acidic species. If a
+            NDArray of pH values is provided, then a 2D array will be
+            returned. In this case, each row represents the speciation for
+            each given pH.
         '''
         # If the given pH is not a list/array, be sure to convert it to one
         # for future calcs.
@@ -103,78 +182,56 @@ class Acid(object):
             den = h3o_Ka.sum()
             return h3o_Ka/den
 
-class Neutral(object):
-    """A nonreactive ion class.
 
-    This object defines things like K+ and Cl-, which contribute to the
-    overall charge balance, but do not have any inherent reactivity with
-    water.
-    
-    Parameters
-    ----------
-    charge : The formal charge of the ion.
-    conc : The concentration of this species in solution.
-
-    """
-    def __init__(self, charge=None, conc=None):
-        if charge == None:
-            raise ValueError(
-                "The charge for this ion must be defined.")
-
-        self.charge = charge 
-        self.conc = conc
-
-    def alpha(self, pH):
-        '''Return the fraction of each species at a given pH.
-
-        Because this is a non-reactive ion class, this will always return a
-        Numpy array containing just 1.0 for all pH values.
-
-        '''
-        if isinstance(pH, (int, float)):
-            length = 1
-        else:
-            length = len(pH)
-        ones = np.ones(length).reshape(-1,1)
-        return ones
-
-
-        
 class System(object):
     '''An object used to define an a system of acid and neutral species.
 
     This object accepts an arbitrary number of acid and neutral species
-    objects and calculates the pH of the system. 
-
-    The objects need to completely define the system. All weak species are
-    input as their fully protonated acidic form as an Acid object. Any neutral
-    ions are accounted for by the appropriate Neutral objects. For example,
-    NaHCO3 would be desribed by an Acid object for H2CO3 and a Neutral object
-    for Na+, and both of these objects would have the same initial
-    concentrations.
-
-    The pH solving is done using a simple minimization algorithm which
-    minimizes the difference in the total positive and negative ion
-    concentrations in the system. A good initial guess will help here, and it
-    can be set manually using the 'guess' keyword. There is an automated
-    method that can be run as well if you set the guess_est argument. This
-    will override whatever you pass is for 'guess'. The 'est_num' keyword sets
-    the number of data points that you'd like to use for finding the guess
-    estimate. Too few points might start you pretty far from a good spot; too
-    many points is probably overkill and won't help much. This may or may not
-    speed things up.
+    objects and uses these to calculate the pH of the system. Be sure to
+    include all of the species that completely define the contents of a
+    particular solution.
 
     Parameters
     ----------
-    *species : These are the Acid and Neutral objects that you'd like to use
-    to define your system.
+    *species 
+        These are any number of Acid and Neutral objects that you'd like to
+        use to define your system.
 
+    Attibutes
+    ---------
+    species : list
+        This is a list containing all of the species that you input.
+
+    pHsolution 
+        This is the full minimization output, which is defined by the function
+        scipy.optimize.minimize. This is only available after running the
+        pHsolve method.
+
+    pH : float
+        The pH of this particular system. This is only calculated after
+        running the pHsolve method.
     '''
     def __init__(self, *species):
         self.species = species
 
 
     def _diff_pos_neg(self, pH):
+        '''Calculate the charge balance difference.
+
+        Parameters
+        ----------
+        pH : int, float, or Numpy Array
+            The pH value(s) used to calculate the different distributions of
+            positive and negative species.
+
+        Returns
+        -------
+        float or Numpy Array
+            The absolute value of the difference in concentration between the
+            positive and negatively charged species in the system. A float is
+            returned if an int or float is input as the pH: a Numpy array is
+            returned if an array of pH values is used as the input.
+        '''
         twoD = True
         if isinstance(pH, (int, float)) or pH.shape[0] == 1:
             twoD = False
@@ -199,6 +256,48 @@ class System(object):
 
     def pHsolve(self, guess=7.0, guess_est=False, est_num=1500, 
                 method='Nelder-Mead', tol=1e-5):
+        '''Solve the pH of the system.
+
+        The pH solving is done using a simple minimization algorithm which
+        minimizes the difference in the total positive and negative ion
+        concentrations in the system. The minimization algorithm can be
+        adjusted using the `method` keyword argument. The available methods
+        can be found in the documentation for the scipy.optimize.minimize
+        function.
+        
+        A good initial guess may help the minimization. It can be set manually
+        using the `guess` keyword, which defaults to 7.0. There is an
+        automated method that can be run as well if you set the `guess_est`
+        argument. This will override whatever you pass is for `guess`. The
+        `est_num` keyword sets the number of data points that you'd like to
+        use for finding the guess estimate. Too few points might start you
+        pretty far from the actual minimum; too many points is probably
+        overkill and won't help much. This may or may not speed things up.
+
+        Parameters
+        ----------
+
+        guess : float (default 7.0)
+            This is used as the initial guess of the pH for the system. 
+
+        guess_est : bool (default False)
+            Run a simple algorithm to determine a best guess for the initial
+            pH of the solution. This may or may not slow down the calculation
+            of the pH.
+
+        est_num : int (default 1500)
+            The number of data points to use in the pH guess estimation.
+            Ignored unless `guess_est=True`.
+
+        method : str (default 'Nelder-Mead')
+            The minimization method used to find the pH. The possible values
+            for this variable are defined in the documentation for the
+            scipy.optimize.minimize function.
+
+        tol : float (default 1e-5)
+            The tolerance used to determine convergence of the minimization
+            function.
+        '''
         if guess_est == True:
             phs = np.linspace(0, 14, est_num)
             guesses = self._diff_pos_neg(phs)
@@ -218,6 +317,23 @@ class System(object):
 
 
 if __name__ == '__main__':
+    # KOH, just need to define the amount of K+, solver takes care of the
+    # rest.
+    a = Neutral(charge=+1, conc=0.1)
+    s = System(a)
+    s.pHsolve()
+    print('NaOH 0.1 M pH = ', s.pH)
+    print()
+
+    # [HCl] = 1.0 x 10**-8   aka the undergrad nightmare
+    # You just need to define the amount of Cl-. The solver will find the
+    # correct H3O+ concentration
+    b = Neutral(charge=-1, conc=1e-8)
+    s = System(b)
+    s.pHsolve()
+    print('HCl 1e-8 M pH = ', s.pH)
+    print()
+    
     # (NH4)3PO4
     # H3PO4 input as the fully acidic species
     a = Acid(pKa=[2.148, 7.198, 12.375], charge=0, conc=1.e-3)
@@ -229,21 +345,8 @@ if __name__ == '__main__':
     s = System(a, b)
     s.pHsolve()
     print('(NH4)3PO4 1e-3 M pH = ', s.pH)
+    print()
 
-    # HCl, just need to define the amount of Cl-. The solver will find the
-    # correct H+
-    b = Neutral(charge=-1, conc=1e-8)
-    s = System(b)
-    s.pHsolve()
-    print('HCl 1e-8 M pH = ', s.pH)
-    
-    # KOH, just need to define the amount of K+, solver takes care of the
-    # rest.
-    a = Neutral(charge=+1, conc=0.1)
-    s = System(a)
-    s.pHsolve()
-    print('NaOH 0.1 M pH = ', s.pH)
-    
     # Distribution diagram H3PO4
     import matplotlib.pyplot as plt
     a = Acid(pKa=[2.148, 7.198, 12.375], charge=0, conc=1.e-3)
@@ -254,17 +357,24 @@ if __name__ == '__main__':
     # Estimate Best pH
     # This is done internallly by the pHsolve function if you use the 
     # guess_est=True flag
+    # This is just a graphical method for visualizing the difference in total
+    # positive and negative species in the system
     s = System(a)
     diffs = s._diff_pos_neg(pH)
     plt.plot(pH, diffs)
     plt.show()
 
     # Phosphoric Acid Titration Curve
+    # First create a list of sodium hydroxide concentrations (titrant)
     Na_concs = np.linspace(1.e-8, 5.e-3, 500)
+    # Here's our Acid
     H3PO4 = Acid(pKa=[2.148, 7.198, 12.375], charge=0, conc=1.e-3)
     phs = []
     for conc in Na_concs:
+        # Create a neutral Na+ with the concentration of the sodium hydroxide
+        # titrant added
         Na = Neutral(charge=1, conc=conc)
+        # Define the system and solve for the pH
         s = System(H3PO4, Na)
         s.pHsolve(guess_est=True)
         phs.append(s.pH)
