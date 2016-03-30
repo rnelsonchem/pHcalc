@@ -317,6 +317,23 @@ class System(object):
 
 
 if __name__ == '__main__':
+    # KOH, just need to define the amount of K+, solver takes care of the
+    # rest.
+    a = Neutral(charge=+1, conc=0.1)
+    s = System(a)
+    s.pHsolve()
+    print('NaOH 0.1 M pH = ', s.pH)
+    print()
+
+    # [HCl] = 1.0 x 10**-8   aka the undergrad nightmare
+    # You just need to define the amount of Cl-. The solver will find the
+    # correct H3O+ concentration
+    b = Neutral(charge=-1, conc=1e-8)
+    s = System(b)
+    s.pHsolve()
+    print('HCl 1e-8 M pH = ', s.pH)
+    print()
+    
     # (NH4)3PO4
     # H3PO4 input as the fully acidic species
     a = Acid(pKa=[2.148, 7.198, 12.375], charge=0, conc=1.e-3)
@@ -328,21 +345,8 @@ if __name__ == '__main__':
     s = System(a, b)
     s.pHsolve()
     print('(NH4)3PO4 1e-3 M pH = ', s.pH)
+    print()
 
-    # HCl, just need to define the amount of Cl-. The solver will find the
-    # correct H+
-    b = Neutral(charge=-1, conc=1e-8)
-    s = System(b)
-    s.pHsolve()
-    print('HCl 1e-8 M pH = ', s.pH)
-    
-    # KOH, just need to define the amount of K+, solver takes care of the
-    # rest.
-    a = Neutral(charge=+1, conc=0.1)
-    s = System(a)
-    s.pHsolve()
-    print('NaOH 0.1 M pH = ', s.pH)
-    
     # Distribution diagram H3PO4
     import matplotlib.pyplot as plt
     a = Acid(pKa=[2.148, 7.198, 12.375], charge=0, conc=1.e-3)
@@ -353,17 +357,24 @@ if __name__ == '__main__':
     # Estimate Best pH
     # This is done internallly by the pHsolve function if you use the 
     # guess_est=True flag
+    # This is just a graphical method for visualizing the difference in total
+    # positive and negative species in the system
     s = System(a)
     diffs = s._diff_pos_neg(pH)
     plt.plot(pH, diffs)
     plt.show()
 
     # Phosphoric Acid Titration Curve
+    # First create a list of sodium hydroxide concentrations (titrant)
     Na_concs = np.linspace(1.e-8, 5.e-3, 500)
+    # Here's our Acid
     H3PO4 = Acid(pKa=[2.148, 7.198, 12.375], charge=0, conc=1.e-3)
     phs = []
     for conc in Na_concs:
+        # Create a neutral Na+ with the concentration of the sodium hydroxide
+        # titrant added
         Na = Neutral(charge=1, conc=conc)
+        # Define the system and solve for the pH
         s = System(H3PO4, Na)
         s.pHsolve(guess_est=True)
         phs.append(s.pH)
