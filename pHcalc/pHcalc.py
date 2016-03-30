@@ -139,30 +139,6 @@ class Neutral(object):
         return ones
 
 
-class Partial(object):
-    def __init__(self, Ksp=None, pKsp=None, stoich=None, charges=None,
-                 *species):
-        # Do a couple quick checks to make sure that everything has been
-        # defined.
-        if Ksp == None and pKsp == None:
-            raise ValueError(
-                "You must define either Ksp or pKsp values.")
-        
-        if Ksp == None:
-            Ksp = 10**-pKsp
-        else:
-            pKsp = -np.log10(Ksp)            
-        
-        self.Ksp = Ksp
-        self.pKsp = pKsp
-        
-        self.stoich = np.array(stoich, dtype=int)
-        self.concs = ( Ksp**(1./self.stoich.sum()) )/\
-                ((self.stoich**self.stoich).sum() - 1.)        
-        
-        for num, spec in zip(stoich, species):
-            pass
-
         
 class System(object):
     '''An object used to define an a system of acid and neutral species.
