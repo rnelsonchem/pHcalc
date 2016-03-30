@@ -10,8 +10,19 @@ class Neutral(object):
     
     Parameters
     ----------
-    charge : The formal charge of the ion.
-    conc : The concentration of this species in solution.
+    charge : int
+        The formal charge of the ion.
+
+    conc : float
+        The concentration of this species in solution.
+
+    Attributes
+    ----------
+    charge : int
+        The formal charge of the ion.
+
+    conc : float
+        The concentration of this species in solution.
 
     """
     def __init__(self, charge=None, conc=None):
@@ -25,8 +36,18 @@ class Neutral(object):
     def alpha(self, pH):
         '''Return the fraction of each species at a given pH.
 
-        Because this is a non-reactive ion class, this will always return a
-        Numpy array containing just 1.0 for all pH values.
+        Parameters
+        ----------
+        pH : int, float, or Numpy Array
+            These are the pH value(s) over which the fraction should be
+            returned.
+
+        Returns
+        -------
+        Numpy NDArray
+            Because this is a non-reactive ion class, this function will
+            always return a Numpy array containing just 1.0's for all pH
+            values.
 
         '''
         if isinstance(pH, (int, float)):
