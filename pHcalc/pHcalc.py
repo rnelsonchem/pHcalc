@@ -347,38 +347,43 @@ if __name__ == '__main__':
     print('(NH4)3PO4 1e-3 M pH = ', s.pH)
     print()
 
-    # Distribution diagram H3PO4
-    import matplotlib.pyplot as plt
-    a = Acid(pKa=[2.148, 7.198, 12.375], charge=0, conc=1.e-3)
-    pH = np.linspace(0, 14, 1000)
-    plt.plot(pH, a.alpha(pH))
-    plt.show()
-    
-    # Estimate Best pH
-    # This is done internallly by the pHsolve function if you use the 
-    # guess_est=True flag
-    # This is just a graphical method for visualizing the difference in total
-    # positive and negative species in the system
-    s = System(a)
-    diffs = s._diff_pos_neg(pH)
-    plt.plot(pH, diffs)
-    plt.show()
+    try:
+        import matplotlib.pyplot as plt
+    except:
+        print('Matplotlib not installed. Some examples not run.')
+    else:
+        # Distribution diagram H3PO4
+        import matplotlib.pyplot as plt
+        a = Acid(pKa=[2.148, 7.198, 12.375], charge=0, conc=1.e-3)
+        pH = np.linspace(0, 14, 1000)
+        plt.plot(pH, a.alpha(pH))
+        plt.show()
+        
+        # Estimate Best pH
+        # This is done internallly by the pHsolve function if you use the
+        # guess_est=True flag
+        # This is just a graphical method for visualizing the difference in
+        # total positive and negative species in the system
+        s = System(a)
+        diffs = s._diff_pos_neg(pH)
+        plt.plot(pH, diffs)
+        plt.show()
 
-    # Phosphoric Acid Titration Curve
-    # First create a list of sodium hydroxide concentrations (titrant)
-    Na_concs = np.linspace(1.e-8, 5.e-3, 500)
-    # Here's our Acid
-    H3PO4 = Acid(pKa=[2.148, 7.198, 12.375], charge=0, conc=1.e-3)
-    phs = []
-    for conc in Na_concs:
-        # Create a neutral Na+ with the concentration of the sodium hydroxide
-        # titrant added
-        Na = Neutral(charge=1, conc=conc)
-        # Define the system and solve for the pH
-        s = System(H3PO4, Na)
-        s.pHsolve(guess_est=True)
-        phs.append(s.pH)
-    plt.plot(Na_concs, phs)
-    plt.show()
+        # Phosphoric Acid Titration Curve
+        # First create a list of sodium hydroxide concentrations (titrant)
+        Na_concs = np.linspace(1.e-8, 5.e-3, 500)
+        # Here's our Acid
+        H3PO4 = Acid(pKa=[2.148, 7.198, 12.375], charge=0, conc=1.e-3)
+        phs = []
+        for conc in Na_concs:
+            # Create a neutral Na+ with the concentration of the sodium
+            # hydroxide titrant added
+            Na = Neutral(charge=1, conc=conc)
+            # Define the system and solve for the pH
+            s = System(H3PO4, Na)
+            s.pHsolve(guess_est=True)
+            phs.append(s.pH)
+        plt.plot(Na_concs, phs)
+        plt.show()
 
 
