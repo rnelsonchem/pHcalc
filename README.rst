@@ -8,6 +8,9 @@ This package is Python 3.5 compatible with dependencies only on Numpy and
 Scipy. Bug fixes, questions, and update requests are encouraged and can be
 filed at the `GitHub repo`_. 
 
+The documentation is in progress. There are several examples of typical usage
+at the end of the main module file.
+
 .. _Requirements:
 
 Requirements
