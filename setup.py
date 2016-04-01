@@ -5,7 +5,7 @@ with open('README.rst') as file:
 
 setup(
     name = "pHcalc",
-    version = "0.1.0",
+    version = "0.1.1",
 
     description = "Systemtic pH calculation package for Python.",
     long_description = long_description,
@@ -25,7 +25,8 @@ setup(
         'Programming Language :: Python :: 3.5',
     ],
 
-    keywords = "pH systematic distribution titration",
+    keywords = "pH systematic distribution titration strong weak acid base " +\
+            "speciation",
 
     packages = find_packages(),
     install_requires = [
