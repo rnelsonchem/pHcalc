@@ -7,7 +7,7 @@ setup(
     name = "pHcalc",
     version = "0.1.2",
 
-    description = "Systemtic pH calculation package for Python.",
+    description = "Systematic pH calculation package for Python.",
     long_description = long_description,
     url = "https://github.com/rnelsonchem/pHcalc",
 
