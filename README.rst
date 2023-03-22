@@ -77,14 +77,14 @@ charge imbalance.
 Example Usage
 #############
 
-*pHcalc* defines three classes - Acid, Neutral, and System - which are used in
+*pHcalc* defines three classes - Acid, Inert, and System - which are used in
 calculating the pH of the system. |H3O| and |OH-| are never explicitly
 defined. The |H3O| concentration is adjusted internally, and |OH-| is
 calculated using K\ :sub:`W`\ .
 
 .. code:: python
 
-    >>> from pHcalc.pHcalc import Acid, Neutral, System
+    >>> from pHcalc.pHcalc import Acid, Inert, System
     >>> import numpy as np
     >>> import matplotlib.pyplot as plt # Optional for plotting below
 
@@ -98,7 +98,7 @@ charge of the system.
 
 .. code:: python
 
-    >>> cl = Neutral(charge=-1, conc=0.01)
+    >>> cl = Inert(charge=-1, conc=0.01)
     >>> system = System(cl)
     >>> system.pHsolve()
     >>> print(system.pH) # Should print 1.9999
@@ -111,7 +111,7 @@ however, *pHcalc* handles it nicely.
 
 .. code:: python
 
-    >>> cl = Neutral(charge=-1, conc=1e-8)
+    >>> cl = Inert(charge=-1, conc=1e-8)
     >>> system = System(cl)
     >>> system.pHsolve()
     >>> print(system.pH) # Should print 6.978295898 (NOT 8!)
@@ -119,13 +119,13 @@ however, *pHcalc* handles it nicely.
 pH of 0.01 M NaOH
 -----------------
 
-This example is very similar to our HCl example, except that our Neutral
+This example is very similar to our HCl example, except that our Inert
 species must have a positive charge. The charge balance is achieved internally
 by the System using an equivalent amount of |OH-|.
 
 .. code:: python
 
-    >>> na = Neutral(charge=1, conc=0.01)
+    >>> na = Inert(charge=1, conc=0.01)
     >>> system = System(na)
     >>> system.pHsolve()
     >>> print(system.pH) # Should print 12.00000
@@ -151,14 +151,14 @@ pH of 0.01 M NaF
 ----------------
 
 This system consist of a 1:1 mixture of an HF Acid instance and a |Na+|
-Neutral instance. The System object can be instantiated with an arbitrary
-number of Acids and Neutral objects. Again, there is an implied equivalent of
+Inert instance. The System object can be instantiated with an arbitrary
+number of Acids and Inert objects. Again, there is an implied equivalent of
 |OH-| necessary to balance the charge of the system.
 
 .. code:: python
 
     >>> hf = Acid(Ka=6.76e-4, charge=0, conc=0.01)
-    >>> na = Neutral(charge=1, conc=0.01)
+    >>> na = Inert(charge=1, conc=0.01)
     >>> system = System(hf, na)
     >>> system.pHsolve()
     >>> print(system.pH) # Should print 7.5992233
@@ -253,7 +253,7 @@ during the pH calculation.
     >>> phos = Acid(pKa=[2.148, 7.198, 12.375], charge=0, conc=1.e-3)
     >>> phs = []
     >>> for mol in na_moles:
-    >>>     na = Neutral(charge=1, conc=mol/sol_volume)
+    >>>     na = Inert(charge=1, conc=mol/sol_volume)
     >>>     system = System(phos, na)
     >>>     system.pHsolve(guess_est=True)
     >>>     phs.append(system.pH)

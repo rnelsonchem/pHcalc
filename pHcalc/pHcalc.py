@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.optimize as spo
 
-class Neutral(object):
+class Inert(object):
     """A nonreactive ion class.
 
     This object defines things like K+ and Cl-, which contribute to the
@@ -89,7 +89,7 @@ class Acid(object):
     Note
     ----
     There is no corresponding Base object. To define a base, you must use a
-    combination of an Acid and Neutral object. See the documentation for
+    combination of an Acid and Inert object. See the documentation for
     examples.
 
     '''
@@ -194,7 +194,7 @@ class System(object):
     Parameters
     ----------
     *species 
-        These are any number of Acid and Neutral objects that you'd like to
+        These are any number of Acid and Inert objects that you'd like to
         use to define your system.
 
     Attibutes
@@ -319,7 +319,7 @@ class System(object):
 if __name__ == '__main__':
     # KOH, just need to define the amount of K+, solver takes care of the
     # rest.
-    a = Neutral(charge=+1, conc=0.1)
+    a = Inert(charge=+1, conc=0.1)
     s = System(a)
     s.pHsolve()
     print('NaOH 0.1 M pH = ', s.pH)
@@ -328,7 +328,7 @@ if __name__ == '__main__':
     # [HCl] = 1.0 x 10**-8   aka the undergrad nightmare
     # You just need to define the amount of Cl-. The solver will find the
     # correct H3O+ concentration
-    b = Neutral(charge=-1, conc=1e-8)
+    b = Inert(charge=-1, conc=1e-8)
     s = System(b)
     s.pHsolve()
     print('HCl 1e-8 M pH = ', s.pH)
@@ -378,7 +378,7 @@ if __name__ == '__main__':
         for conc in Na_concs:
             # Create a neutral Na+ with the concentration of the sodium
             # hydroxide titrant added
-            Na = Neutral(charge=1, conc=conc)
+            Na = Inert(charge=1, conc=conc)
             # Define the system and solve for the pH
             s = System(H3PO4, Na)
             s.pHsolve(guess_est=True)
