@@ -84,7 +84,7 @@ calculated using K\ :sub:`W`\ .
 
 .. code:: python
 
-    >>> from pHcalc.pHcalc import Acid, Inert, System
+    >>> from pHcalc import Acid, Inert, System
     >>> import numpy as np
     >>> import matplotlib.pyplot as plt # Optional for plotting below
 
