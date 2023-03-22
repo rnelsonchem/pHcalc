@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pHcalc"
+version = "0.1.2"
+
+description = "Systematic pH calculation package for Python"
+keywords = [ "pH", "systematic", "distribution", "titration", "acid", "base" ]
+readme = "README.rst"
+license = {text = "BSD-3-Clause"}
+
+authors = [
+  { name="Ryan Nelson", email="rnelsonchem@gmail.com" },
+]
+
+classifiers = [
+    'Development Status :: 4 - Beta',
+    'Intended Audience :: Science/Research',
+    'License :: OSI Approved :: BSD License',
+    'Programming Language :: Python :: 3',
+]
+
+requires-python = ">=3.5"
+dependencies = [
+        'numpy>=1.10.0',
+        'scipy>=0.17.0',
+        ]
+        
+[project.urls]
+"Homepage" = "https://github.com/rnelsonchem/pHcalc"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.optional-dependencies]
+test = [ 
+    "pytest", 
+]
+
+dev = [
+    "pytest", 
+    "build", 
+    "ipython",
+    "twine",
+]
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=prepend",
+]
