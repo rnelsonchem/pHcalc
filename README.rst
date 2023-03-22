@@ -4,12 +4,9 @@ pHcalc
 *pHcalc* is a Python library for systematically calculating solution pH,
 distribution diagrams, and titration curves.
 
-This package is Python 3.5 compatible with dependencies_ only on Numpy and
+This package is Python3 compatible with dependencies_ only on Numpy and
 Scipy. If you will be plotting the data, then there is an `optional
 dependency`_ on Matplotlib as well.  
-
-Bug fixes, questions, and update requests are encouraged and can be
-filed at the `GitHub repo`_. 
 
 .. _dependencies:
 
@@ -30,14 +27,16 @@ Optional Packages
 Installation
 ------------
 
-*pHcalc* is only a single Python file, so installation is quite simple. After
-installation of the dependencies_, the most recent version of *pHcalc* is
-available via ``pip``, either from PyPI_ (stable) or the `GitHub repo`_ (most
+*pHcalc* is available via ``pip``, ``conda``, or the `GitHub repo`_ (most
 recent).
 
-From PyPI_::
+From PyPI::
 
     $ pip install pHcalc
+
+Via Conda::
+
+    $ conda install -c rnelsonchem pHcalc
 
 If you have ``git`` installed on your system, then you can get the most
 recent, unrelased version from the `GitHub repo`_::
@@ -65,7 +64,7 @@ at a given pH value is determined. Multiplying this by the concentration of
 acid in solution provides the concentration of each acidic species in the
 system, and these concentrations are used to balance the charge.
 
-Using this methodology bases and strong acids can be described using neutral,
+Using this methodology bases and strong acids can be described using inert,
 charged species. These are ions that do not react with water, such as |Na+|
 and |Cl-|. In this context, any |Cl-| in solution must be charged balanced
 with an appropriate amount of |H3O|, which would define HCl in solution.
