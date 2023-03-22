@@ -197,10 +197,17 @@ class System(object):
         These are any number of Acid and Inert objects that you'd like to
         use to define your system.
 
+    Kw : float (default 1.0e-14)
+        The autoionization constant for water. This can vary based on
+        temperature, for example.
+
     Attibutes
     ---------
     species : list
         This is a list containing all of the species that you input.
+
+    Kw : float
+        The autoionization of water set using the Kw keyword argument.
 
     pHsolution 
         This is the full minimization output, which is defined by the function
@@ -211,8 +218,9 @@ class System(object):
         The pH of this particular system. This is only calculated after
         running the pHsolve method.
     '''
-    def __init__(self, *species):
+    def __init__(self, *species, Kw=1e-14):
         self.species = species
+        self.Kw = Kw
 
 
     def _diff_pos_neg(self, pH):
@@ -239,7 +247,7 @@ class System(object):
             pH = np.array(pH, dtype=float)
         # Calculate the h3o and oh concentrations and sum them up.
         h3o = 10.**(-pH)
-        oh = (10.**(-14))/h3o
+        oh = (self.Kw)/h3o
         x = (h3o - oh)
 
         # Go through all the species that were given, and sum up their
