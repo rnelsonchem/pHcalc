@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pHcalc"
-version = "0.1.2"
+version = "0.2.0"
 
 description = "Systematic pH calculation package for Python"
 keywords = [ "pH", "systematic", "distribution", "titration", "acid", "base" ]

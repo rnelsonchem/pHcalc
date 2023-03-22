@@ -36,7 +36,7 @@ From PyPI::
 
 Via Conda::
 
-    $ conda install -c rnelsonchem pHcalc
+    $ conda install -c rnelsonchem phcalc
 
 If you have ``git`` installed on your system, then you can get the most
 recent, unrelased version from the `GitHub repo`_::

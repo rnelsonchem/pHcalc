@@ -1,0 +1,41 @@
+{% set name = "pHcalc" %}
+{% set version = "0.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pHcalc-{{ version }}.tar.gz
+  sha256: 692aa59d92b5a3c2ce90f947be3166fd8964adb9246bd81d67b1c347f5713317
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.5
+    - setuptools
+    - pip
+  run:
+    - python >=3.5
+    - numpy >=1.10.0
+    - scipy >=0.17.0
+
+test:
+  imports:
+    - pHcalc
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Systematic pH calculation package for Python
+  license: BSD-3-Clause
+
+extra:
+  recipe-maintainers:
+    - rnelsonchem
