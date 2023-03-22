@@ -172,10 +172,10 @@ species.
 
 .. code:: python
 
-    >>> carbonic = Acid(pKa=[3.6, 10.32], charge=0, conc=0.01)
+    >>> carbonic = Acid(pKa=[6.35, 10.33], charge=0, conc=0.01)
     >>> system = System(carbonic)
     >>> system.pHsolve()
-    >>> print(system.pH) # Should print 2.8343772
+    >>> print(system.pH) # Should print 4.176448
 
 pH of 0.01 M Alanine Zwitterion Form
 ------------------------------------
