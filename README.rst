@@ -234,7 +234,10 @@ The 2D returned array can be used to plot a distribution diagram.
     >>> phs = np.linspace(0, 14, 1000)
     >>> fracs = phos.alpha(phs)
     >>> plt.plot(phs, fracs)
+    >>> plt.legend(['H3PO4', 'H2PO4^1-', 'HPO4^2-', 'PO4^3-'])
     >>> plt.show()
+
+.. image:: ./_static/dist_diagram.png
 
 Titration Curves
 ----------------
@@ -259,6 +262,9 @@ during the pH calculation.
     >>>     phs.append(system.pH)
     >>> plt.plot(na_moles, phs)
     >>> plt.show()
+
+.. image:: ./_static/titration_crv.png
+
 
 .. Substitutions
 
