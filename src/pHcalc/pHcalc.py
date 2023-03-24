@@ -1,6 +1,8 @@
 import numpy as np
 import scipy.optimize as spo
 
+from .print_strings import *
+
 class Inert(object):
     """A nonreactive ion class.
 
@@ -25,13 +27,14 @@ class Inert(object):
         The concentration of this species in solution.
 
     """
-    def __init__(self, charge=None, conc=None):
+    def __init__(self, charge=None, conc=None, name=None):
         if charge == None:
             raise ValueError(
                 "The charge for this ion must be defined.")
 
         self.charge = charge 
         self.conc = conc
+        self.name = name
 
     def alpha(self, pH):
         '''Return the fraction of each species at a given pH.
@@ -93,7 +96,7 @@ class Acid(object):
     examples.
 
     '''
-    def __init__(self, Ka=None, pKa=None, charge=None, conc=None):
+    def __init__(self, Ka=None, pKa=None, charge=None, conc=None, name=None):
         # Do a couple quick checks to make sure that everything has been
         # defined.
         if Ka == None and pKa == None:
@@ -130,6 +133,7 @@ class Acid(object):
         self.charge = np.arange(charge, charge - len(self.Ka) - 1, -1)
         # Make sure the concentrations are accessible to the object instance.
         self.conc = conc 
+        self.name = name
 
     def alpha(self, pH):
         '''Return the fraction of each species at a given pH.
@@ -222,6 +226,76 @@ class System(object):
         self.species = species
         self.Kw = Kw
 
+    def __str__(self, ):
+        '''Return a string representing the composition of the system.
+
+        The unformatted text strings used in this method are in a separate
+        module `print_string.py`.
+        '''
+        # The ultimate string to be returned from this method
+        prt_str = ''
+
+        # Print a header based on the status of the system
+        if not hasattr(self, 'pH'):
+            prt_str += no_ph
+        else:
+            prt_str += has_ph.format(self)
+        prt_str += header_line
+        prt_str += sep_line1
+
+        # Print the species information
+        # Need counters for acid/ion names and total charge concentration
+        acid_num = 1
+        ion_num = 1
+        charge_conc = 0.
+        for cpd in self.species:
+            # For acids, print information for all possible species
+            # The final species will not have a Ka/pKa value
+            if isinstance(cpd, Acid):
+                name = cpd.name if cpd.name else f'Acid{acid_num}'
+                acid_num += 1
+
+                kas = list(cpd.Ka) + [np.nan,]
+                pkas = list(cpd.pKa) + [np.nan,]
+
+                if hasattr(self, 'pH'):
+                    concs = cpd.alpha(self.pH)
+                else:
+                    concs = [cpd.conc,] + [0,]*len(cpd.Ka)
+                    concs = np.array(concs)
+
+                props = zip(cpd.charge, kas, pkas, concs)
+                for charge, ka, pka, conc in props:
+                    prt_str += acid_line.format(name, charge, ka, pka, 
+                                            conc)
+
+                charge_conc += (cpd.charge*concs).sum()
+
+            # Ions do not have Ka/pKa values either, so they are simpler
+            else:
+                name = cpd.name if cpd.name else f'Ion{ion_num}'
+                ion_num += 1
+
+                prt_str += ion_line.format(name, cpd.charge, cpd.conc) 
+                charge_conc += cpd.charge*cpd.conc
+            # Separate species with a different line
+            prt_str += sep_line2
+
+        # Hydronium/hydroxide concentrations
+        if hasattr(self, 'pH'):
+            h3o = 10**-self.pH
+            oh = self.Kw/h3o
+        else:
+            # Solve the following equation
+            # [H3O] + charge_conc - [OH] = 0
+            # [H3O]^2 + [H3O]*charge_conc - Kw = 0
+            possible_h3o = np.roots([1., charge_conc, -self.Kw])
+            h3o = possible_h3o.max() # Must be positive num
+            oh = self.Kw/h3o
+        prt_str += ion_line.format('H3O+', 1, h3o)
+        prt_str += ion_line.format('OH-', -1, oh)
+
+        return prt_str
 
     def _diff_pos_neg(self, pH):
         '''Calculate the charge balance difference.
