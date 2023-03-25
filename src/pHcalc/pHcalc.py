@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.optimize as spo
 
-class Inert(object):
+class Inert:
     """A nonreactive ion class.
 
     This object defines things like K+ and Cl-, which contribute to the
@@ -59,7 +59,7 @@ class Inert(object):
 
 
         
-class Acid(object):
+class Acid:
     '''An acidic species class.
 
     This object is used to calculate a number of parameters related to a weak
@@ -183,7 +183,7 @@ class Acid(object):
             return h3o_Ka/den
 
 
-class System(object):
+class System:
     '''An object used to define an a system of acid and neutral species.
 
     This object accepts an arbitrary number of acid and neutral species
@@ -361,7 +361,6 @@ if __name__ == '__main__':
         print('Matplotlib not installed. Some examples not run.')
     else:
         # Distribution diagram H3PO4
-        import matplotlib.pyplot as plt
         a = Acid(pKa=[2.148, 7.198, 12.375], charge=0, conc=1.e-3)
         pH = np.linspace(0, 14, 1000)
         plt.plot(pH, a.alpha(pH))
