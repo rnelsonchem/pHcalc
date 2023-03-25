@@ -197,9 +197,10 @@ class System:
         These are any number of Acid and Inert objects that you'd like to
         use to define your system.
 
-    Kw : float (default 1.0e-14)
+    Kw : float (default 1.01e-14)
         The autoionization constant for water. This can vary based on
-        temperature, for example.
+        temperature, for example. The default value is for water at
+        298 K and 1 atm.
 
     Attibutes
     ---------
@@ -218,7 +219,7 @@ class System:
         The pH of this particular system. This is only calculated after
         running the pHsolve method.
     '''
-    def __init__(self, *species, Kw=1e-14):
+    def __init__(self, *species, Kw=1.01e-14):
         self.species = species
         self.Kw = Kw
 
@@ -392,5 +393,3 @@ if __name__ == '__main__':
             phs.append(s.pH)
         plt.plot(Na_concs, phs)
         plt.show()
-
-
