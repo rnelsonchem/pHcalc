@@ -297,6 +297,14 @@ class System(object):
 
         return prt_str
 
+    def __repr__(self, ):
+        '''The representation of this object will be the same as printing for
+        interactive terminals.
+        '''
+        repr_str = self.__str__()
+
+        return repr_str
+
     def _diff_pos_neg(self, pH):
         '''Calculate the charge balance difference.
 
