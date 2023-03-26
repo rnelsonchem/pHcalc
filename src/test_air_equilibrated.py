@@ -19,7 +19,7 @@ assert syst.Kw == testKw
 print()
 
 
-# 2. Simple exazmple
+# 2. Simple example
 
 sys0 = System()
 sys0.pHsolve()
@@ -58,27 +58,27 @@ aqionP_CO2 = 10**-3.408 # conversion of pCO2 into P_CO2 [atm]
 
 # Test cases
 paramlist = [
-    {'descr':       '0.1 M HCl(aq) in eq. with amosphere',
+    {'descr':       '0.1 M HCl(aq) in eq. with atmosphere',
      'ioncharge':  -1,
      'ionconc':     0.1,
      'aqion_pH':    1.08},
-    {'descr':       '1 mM HCl(aq) in eq. with amosphere',
+    {'descr':       '1 mM HCl(aq) in eq. with atmosphere',
      'ioncharge':  -1,
      'ionconc':     0.001,
      'aqion_pH':    3.02},
-    {'descr':       'pure water in eq. with amosphere',
+    {'descr':       'pure water in eq. with atmosphere',
      'ioncharge':   None,
      'ionconc':     None,
      'aqion_pH':    5.61},
-    {'descr':       '1 mM NaOH(aq) in eq. with amosphere',
+    {'descr':       '1 mM NaOH(aq) in eq. with atmosphere',
      'ioncharge':   1,
      'ionconc':     0.001,
      'aqion_pH':    8.20},
-    {'descr':       '10 mM NaOH(aq) in eq. with amosphere',
+    {'descr':       '10 mM NaOH(aq) in eq. with atmosphere',
      'ioncharge':   1,
      'ionconc':     0.01,
      'aqion_pH':    9.11},
-    {'descr':       '0.1 M NaOH(aq) in eq. with amosphere',
+    {'descr':       '0.1 M NaOH(aq) in eq. with atmosphere',
      'ioncharge':   1,
      'ionconc':     0.1,
      'aqion_pH':    9.71},
