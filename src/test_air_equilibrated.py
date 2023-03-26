@@ -26,11 +26,11 @@ sys0.pHsolve()
 print('pure water, closed system                     : pH = ', sys0.pH)
 
 syst = SystemAirEquilibrated()
-syst.DICsolve()
+syst.pHsolve()
 print('pure water, air-equilibrated system (in 2021) : pH = ', syst.pH)
 
 syst1972 = SystemAirEquilibrated(P_CO2 = 372.46e-6)
-syst1972.DICsolve()
+syst1972.pHsolve()
 print('pure water, air-equilibrated system (in 1972) : pH = ', syst1972.pH)
 
 print()
@@ -55,6 +55,8 @@ print()
 
 # CO2 value used by aqion (watch out: aqion uses pCO2, not partial pressure)
 aqionP_CO2 = 10**-3.408 # conversion of pCO2 into P_CO2 [atm]
+print('Using partial CO2 pressure: {0:5.3e} atm (aqion value)'.\
+      format(aqionP_CO2))
 
 # Test cases
 paramlist = [
@@ -91,6 +93,6 @@ for param in paramlist:
         ion = IonAq(charge = param['ioncharge'],
                     conc = param['ionconc'])
         syst = SystemAirEquilibrated(ion, P_CO2 = aqionP_CO2)
-    syst.DICsolve()
+    syst.pHsolve()
     print('{0:40s} | DIC = {1:7.3e} M | pH = {2:5.2f} [aqion: {3:5.2f}]'.\
           format(param['descr'], syst.DIC, syst.pH, param['aqion_pH']))

@@ -117,20 +117,26 @@ class SystemAirEquilibrated(System):
         """
         self.DIC = DIC
         self.carbonic.conc = self.DIC
-        self.pHsolve()
+        super().pHsolve() # solve for pH using System.pHsolve
         alphas = self.carbonic.alpha(self.pH)
         self.c_H2CO3x_calc = alphas[0]*self.carbonic.conc
         return (self.c_H2CO3x_calc - self.c_H2CO3x_goal)
 
     
-    def DICsolve(self):
-        """Solve for dissolved inorganic carbon in equilibrium with atmosphere.
+    def pHsolve(self):
+        """Solve the system equilibrium including atmospheric carbon dioxide.
+        
+        This is done by solving for dissolved inorganic carbon (DIC) in 
+        equilibrium with atmosphere. At each guess for the DIC, the system
+        pH and composition are re-calculated, and the dissolved
+        CO2(aq)/H2CO3(aq) concentrations compared to the air-equilibrium
+        values.
         """
         # Use the secant method to find the DIC for which the calculated
         # [H2CO3x] concentration matches the Henry equilibrium concentration.
         #
         #TODO: Optimize initial guess and tolerance parameters. Make
-        # intelligent choices. The currently chosen values seem to work for
+        # informed choices. The currently chosen values seem to work for
         # most compositions.
         DIC_opt = secant(self._DICguess, 
                          x0 = 0.1,
