@@ -1,7 +1,7 @@
 pHcalc
 ######
 
-*pHcalc* is a Python library for systematically calculating solution pH,
+*pHcalc* is a Python library for systematic calculations of solution pH,
 distribution diagrams, and titration curves.
 
 This package is Python3 compatible with dependencies_ only on Numpy and
@@ -48,38 +48,55 @@ recent, unrelased version from the `GitHub repo`_::
 Background
 ##########
 
-*pHcalc* calculates the pH of a complex system of potentially strong and weak
-acids and bases using a systematic equilibrium solution method. This method is
-described in detail in `the Journal of Chemical Education`_ and in this
-`ChemWiki article`_, for example. (There is also another, older Pascal program
-called PHCALC_, which uses matrix algebra to accomplish the same task. To the
-best of my knowledge, the source code for this program is no longer
-available.)
+*pHcalc* calculates the pH of a complex system of acids and bases using a
+systematic equilibrium solution method. This method is described in detail in
+`the Journal of Chemical Education`_ and in this `ChemWiki article`_, for
+example. (There is also another, older Pascal program called PHCALC_, which
+uses matrix algebra to accomplish the same task. To the best of my knowledge,
+the source code for this program is no longer available.)
 
-Basically, this method finds the optimum pH for the mixture by systematically
-adjusting the pH until a charge balance is achieved, i.e. the concentrations
-of positively charged ions equals the charge for the negatively charged ions.
-For (polyprotic) weak acids, the fractional distribution of the species
-at a given pH value is determined. Multiplying this by the concentration of
-acid in solution provides the concentration of each acidic species in the
-system, and these concentrations are used to balance the charge.
+Basically, this method finds the equilibrium concentrations for the solution
+by systematically adjusting the pH until a charge balance is achieved, i.e.
+the concentrations of positively charged ions equals the charge for the
+negatively charged ions.  For (polyprotic) weak acids, the fractional
+distribution of the species at a given pH value is determined. Multiplying
+this by the concentration of acid in solution provides the concentration of
+each species in the system, and these concentrations are used to balance the
+charge.
 
-Using this methodology bases and strong acids can be described using inert,
-charged species. These are ions that do not react with water, such as |Na+|
-and |Cl-|. In this context, any |Cl-| in solution must be charged balanced
-with an appropriate amount of |H3O|, which would define HCl in solution.
-|Na+| must be offset by an equivalent amount of |OH-|, which defines a
-solution of NaOH. A 1:1 combination of |Na+| and |H2CO3| would describe a
-solution of |NaHCO3|, the additional equivalent of |OH-| is implied by the
-charge imbalance.
+Defined Classes
+###############
+
+*pHcalc* defines three classes - Acid, Inert, and System - which are used in
+calculating the pH of the system. |H3O| and |OH-| are never explicitly
+defined; these concentrations are adjusted internally using K\ :sub:`W`\ .
+
+.. code:: python
+
+    >>> from pHcalc import Acid, Inert, System
+
+The general definitions of these objects are given in the following list, with
+detailed usage examples outlined in the examples_ section below. 
+
+- ``Acid`` This class is used to define an aqueous species that has one or
+  more known |Ka|/|pKa| values.
+
+- ``Inert`` This class is used to define aqueous ions that are assumed to not
+  be part of any aqueous equilibria. For example, |Na+| or |Cl-|.
+
+- ``System`` This is a collection of ``Acid`` and ``Inert`` objects that
+  define your aqueous solution. This class has a method for calculating the pH
+  of this group of species.
+
+.. _examples:
 
 Example Usage
 #############
 
-*pHcalc* defines three classes - Acid, Inert, and System - which are used in
-calculating the pH of the system. |H3O| and |OH-| are never explicitly
-defined. The |H3O| concentration is adjusted internally, and |OH-| is
-calculated using K\ :sub:`W`\ .
+The examples below are meant to demonstrate a variety of different usage cases
+of the *pHcalc* classes described above. These example can be run from an
+interactive terminal (including Jupyter notebooks) or from a '.py' file.
+However, the following imports are assumed in every case.
 
 .. code:: python
 
@@ -90,17 +107,141 @@ calculated using K\ :sub:`W`\ .
 pH of 0.01 M HCl
 ----------------
 
-First of all, HCl completely dissociates in water to give equal amounts of
-|H3O| and |Cl-|. Because |H3O| is adjusted internally, all you need to define
-is |Cl-|. This implies a single equivalent of |H3O| in order to balance the
-charge of the system.
+This simple example can be calculated in two different ways using *pHcalc*,
+which highlights the usage of all the defined object classes. 
+
+Method 1
+________
+
+In the first method, the ``Acid`` class is used to define our acid HCl, as
+shown in the code snippet below.
 
 .. code:: python
 
-    >>> cl = Inert(charge=-1, conc=0.01)
+    >>> hcl = Acid(pKa=-8., charge=0, conc=0.01, name='HCl')
+
+For HCl, the given |pKa| is an estimate_, but it will work fine for our
+purposes. The ``charge`` keyword is an integer used to define the charge for
+the most acidic species. For HCl, the two possible species in solution are HCl
+and |Cl-| -- the most acidic species, HCl, does not have a charge. The
+``conc`` keyword argument sets the total molarity ([Total] = [HCl] + [|Cl-|])
+of this acid in solution. The final (optional) keyword argument, ``name``, is
+a string that can be used to set the name of this ``Acid`` for printing
+purposes, as discussed below.
+
+The ``System`` class is used to collect a group of ``Acid`` and ``Inert``
+species for pH calculations. Any number of species instances can be passed in
+as positional arguments during initialization. Printing this instance provides
+some information about the species in solution. Notice that a warning is give
+that lets us know the solution is not at equilibrium -- i.e. the pH has not
+been calculated. A very important aspect of the code is that |H3O| and |OH-|
+concentrations are not defined explicitly. 
+
+.. code:: python
+
+   >>> system = System(hcl)
+   >>> print(system)
+
+
+::
+
+   ### THE CONCENTRATIONS OF THIS SYSTEM ARE NOT AT EQUILIBRIUM ###
+   To determine the equilibrium species distribution use System.pHsolve
+   
+   Species        Charge    Ka             pKa       Conc
+   =================================================================
+   HCl            +0        1.000e+08      -8.00     1.0000e-02
+   HCl            -1        nan            nan       0.0000e+00
+   -----------------------------------------------------------------
+   H3O+           +1                                 1.0000e-07
+   OH-            -1                                 1.0000e-07
+
+The ``pHsolve`` method can be used to calculate the equilibrium
+concentrations, including pH. Printing the ``System`` instance again will now
+show the pH and equilibrium concentrations. 
+
+.. code:: python
+
+   >>> system.pHsolve()
+   >>> print(system)
+
+::
+
+    ### THESE ARE THE EQUILIBRIUM SYSTEM CONCENTRATIONS ###
+
+    SYSTEM pH: 2.000
+
+    Species        Charge    Ka             pKa       Conc
+    =================================================================
+    HCl            +0        1.000e+08      -8.00     1.0000e-10
+    HCl            -1        nan            nan       1.0000e+00
+    -----------------------------------------------------------------
+    H3O+           +1                                 1.0000e-02
+    OH-            -1                                 9.9999e-13
+
+
+After running the ``pHsolve`` method, a new object attribute, ``pH``, is
+created, which is the calculated pH value with full precision. 
+
+.. code:: python
+
+   >>> print(system.pH)
+   1.9999977111816385
+
+Method 2
+________
+
+An alternate method for determining the pH is to define a solution of chloride
+(|Cl-|) ions. HCl is typically considered a strong acid in aqueous solutions,
+because it is assumed that this molecule completely dissociates to equal
+amounts of |H3O| and |Cl-|. Because *pHcalc* calculates the |H3O|
+concentration internally, this species does not need to be included in the
+``System`` call. Instead, we can define |Cl-| as an instance of the ``Inert``
+object class. These objects are used to define aqueous ions that are assumed
+to not directly participate in Bronsted-Lowry acid/base equilibria; however,
+their presence in solution affects the overall charge balance of the solution.
+Printing this system before equilibration shows an equal concentration of
+"Chloride" and "|H3O|" (1.000e-02).
+
+.. code:: python
+
+    >>> cl = Inert(charge=-1, conc=0.01, name='Chloride')
     >>> system = System(cl)
-    >>> system.pHsolve()
-    >>> print(system.pH) # Should print 1.9999
+    >>> print(system)
+
+::
+
+    ### THE CONCENTRATIONS OF THIS SYSTEM ARE NOT AT EQUILIBRIUM ###
+    To determine the equilibrium species distribution use System.pHsolve
+
+    Species        Charge    Ka             pKa       Conc
+    =================================================================
+    Chloride       -1                                 1.0000e-02
+    -----------------------------------------------------------------
+    H3O+           +1                                 1.0000e-02
+    OH-            -1                                 1.0000e-12 
+
+Equilibrating this system with the ``pHsolve`` method provides a solution with
+the same pH value as our original solution using HCl.
+
+.. code:: python
+
+   >>> system.pHsolve()
+   >>> print(system)
+
+::
+
+    ### THESE ARE THE EQUILIBRIUM SYSTEM CONCENTRATIONS ###
+
+    SYSTEM pH: 2.000
+
+    Species        Charge    Ka             pKa       Conc
+    =================================================================
+    Chloride       -1                                 1.0000e-02
+    -----------------------------------------------------------------
+    H3O+           +1                                 1.0000e-02
+    OH-            -1                                 9.9999e-13
+
 
 pH of 1e-8 M HCl
 ----------------
@@ -113,14 +254,28 @@ however, *pHcalc* handles it nicely.
     >>> cl = Inert(charge=-1, conc=1e-8)
     >>> system = System(cl)
     >>> system.pHsolve()
-    >>> print(system.pH) # Should print 6.978295898 (NOT 8!)
+    >>> print(system) # pH is 6.978 NOT 8!
+
+::
+
+    ### THESE ARE THE EQUILIBRIUM SYSTEM CONCENTRATIONS ###
+
+    SYSTEM pH: 6.978
+
+    Species        Charge    Ka             pKa       Conc
+    =================================================================
+    Chloride       -1                                 1.0000e-08
+    -----------------------------------------------------------------
+    H3O+           +1                                 1.0512e-07
+    OH-            -1                                 9.5125e-08
 
 pH of 0.01 M NaOH
 -----------------
 
-This example is very similar to our HCl example, except that our Inert
-species must have a positive charge. The charge balance is achieved internally
-by the System using an equivalent amount of |OH-|.
+This example is very similar to our second HCl example, except that our Inert
+species must have a positive charge. In the same manner as our HCl examples
+above, the charge balance is achieved internally by the system using an
+equivalent amount of |OH-|.
 
 .. code:: python
 
@@ -166,7 +321,7 @@ number of Acids and Inert objects. Again, there is an implied equivalent of
 pH of 0.01 M |H2CO3|
 --------------------
 
-The |Ka| and |pKa| attributes can also accept lists of values for polyprotic
+The |Ka| and |pKa| attributes also accept lists of values for polyprotic
 species.
 
 .. code:: python
@@ -179,17 +334,86 @@ species.
 pH of 0.01 M Alanine Zwitterion Form
 ------------------------------------
 
-Alanine has two pKa values, 2.35 and 9.69, but the fully protonated form is
-positively charged. In order to define the neutral zwitterion, only the
-positively charged Acid object needs to be defined. The charge balance in this
-case implies a single equivalent of |OH-|.  
+Alanine has two pKa values, 2.35 and 9.69, and the fully protonated form is
+positively charged. In order to define the neutral zwitterion, a ``System``
+containing only the positively charged ``Acid`` object needs to be defined.
+The charge balance in this case implies a single equivalent of |OH-|, as can
+be seen by printing the ``System`` instance before calculating the pH.
 
 .. code:: python 
 
     >>> ala = Acid(pKa=[2.35, 9.69], charge=1, conc=0.01)
     >>> system = System(ala)
+    >>> print(system)
+
+::
+
+    ### THE CONCENTRATIONS OF THIS SYSTEM ARE NOT AT EQUILIBRIUM ###
+    To determine the equilibrium species distribution use System.pHsolve
+
+    Species        Charge    Ka             pKa       Conc
+    =================================================================
+    Acid1          +1        4.467e-03      2.35      1.0000e-02
+    Acid1          +0        2.042e-10      9.69      0.0000e+00
+    Acid1          -1        nan            nan       0.0000e+00
+    -----------------------------------------------------------------
+    H3O+           +1                                 1.0000e-12
+    OH-            -1                                 1.0000e-02
+
+.. code:: python
+
     >>> system.pHsolve()
-    >>> print(system.pH) # Should print 6.0991569
+    >>> print(system)
+
+::
+
+    ### THESE ARE THE EQUILIBRIUM SYSTEM CONCENTRATIONS ###
+
+    SYSTEM pH: 6.099
+
+    Species        Charge    Ka             pKa       Conc
+    =================================================================
+    Acid1          +1        4.467e-03      2.35      1.7810e-04
+    Acid1          +0        2.042e-10      9.69      9.9957e-01
+    Acid1          -1        nan            nan       2.5643e-04
+    -----------------------------------------------------------------
+    H3O+           +1                                 7.9587e-07
+    OH-            -1                                 1.2565e-08
+
+In practice, though, a solution of this species would be created by dissolving
+the commercially available HCl salt of alanine (Ala*HCl) in water and adding
+an equimolar amount of NaOH to free the base. This situation can be easily
+accomplished by adding ``Inert`` instances for |Cl-| and |Na+|; the result of
+this pH calculation is equivalent to before. (Note: the ionic strength of this
+solution will be quite a bit different, though.)
+
+.. code:: python
+
+    >>> ala = Acid(pKa=[2.35, 9.69], charge=1, conc=0.01)
+    >>> cl = Inert(charge=-1, conc=0.01, name='Chloride')
+    >>> na = Inert(charge=1, conc=0.01, name='Sodium')
+    >>> system = System(ala, cl, na)
+    >>> system.pHsolve()
+    >>> print(system)
+
+::
+
+    ### THESE ARE THE EQUILIBRIUM SYSTEM CONCENTRATIONS ###
+
+    SYSTEM pH: 6.099
+
+    Species        Charge    Ka             pKa       Conc
+    =================================================================
+    Acid1          +1        4.467e-03      2.35      1.7810e-04
+    Acid1          +0        2.042e-10      9.69      9.9957e-01
+    Acid1          -1        nan            nan       2.5643e-04
+    -----------------------------------------------------------------
+    Chloride       -1                                 1.0000e-02
+    -----------------------------------------------------------------
+    Sodium         +1                                 1.0000e-02
+    -----------------------------------------------------------------
+    H3O+           +1                                 7.9587e-07
+    OH-            -1                                 1.2565e-08
 
 pH of 0.01 M |NH4PO4|
 ---------------------
@@ -221,9 +445,9 @@ ordered from most acid to least acidic species.
     >>> phos = Acid(pKa=[2.148, 7.198, 12.319], charge=0, conc=0.01)
     >>> phos.alpha(7.0)
     array([ 8.6055e-06, 6.1204e-01, 3.8795e-01, 1.8611e-06])
-    >>> # This is H3PO4, H2PO4-, HPO4_2-, and HPO4_3-
+    >>> # This is H3PO4, H2PO4-, HPO4_2-, and PO4_3-
 
-For a Numpy array og pH values, a 2D array of fractional distribution values
+For a Numpy array of pH values, a 2D array of fractional distribution values
 is returned, where each row is a series of distributions for each given pH.
 The 2D returned array can be used to plot a distribution diagram. 
 
@@ -289,3 +513,5 @@ during the pH calculation.
 .. _ChemWiki article: 
     http://chemwiki.ucdavis.edu/Core/Analytical_Chemistry/Analytical_Chemistry_2.0/06_Equilibrium_Chemistry/6G%3A_Solving_Equilibrium_Problems#6G.3_A_Systematic_Approach_to_Solving_Equilibrium_Problems
 .. _PHCALC: http://pubs.acs.org/doi/pdf/10.1021/ed071p119
+.. _estimate: https://organicchemistrydata.org/hansreich/resources/pka/pka_data/evans_pKa_table.pdf
+
