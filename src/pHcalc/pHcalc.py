@@ -183,6 +183,23 @@ class Acid(object):
             return h3o_Ka/den
 
 
+class AcidGas(Acid):
+    def __init__(self, *args, Hs=None, Pgas=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.gas_conc = Hs*Pgas
+        self.conc = self.gas_conc
+        self.gas_idx = np.argmin( np.abs( self.charge ) )
+
+
+    def alpha(self, pH):
+        alphas = super().alpha(pH)
+
+        self.conc = self.gas_conc/alphas[self.gas_idx]
+
+        return alphas
+        
+
 class System(object):
     '''An object used to define an a system of acid and neutral species.
 
@@ -253,11 +270,12 @@ class System(object):
         # Go through all the species that were given, and sum up their
         # charge*concentration values into our total sum.
         for s in self.species:
+            alphas = s.alpha(pH)
             if twoD == False:
-                x += (s.conc*s.charge*s.alpha(pH)).sum()
+                x += (s.conc*s.charge*alphas).sum()
             else:
-                x += (s.conc*s.charge*s.alpha(pH)).sum(axis=1)
-        
+                x += (s.conc*s.charge*alphas).sum(axis=1)
+
         # Return the absolute value so it never goes below zero.
         return np.abs(x)
         
