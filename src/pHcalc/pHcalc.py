@@ -259,7 +259,8 @@ class System:
             else:
                 x += (s.conc*s.charge*s.alpha(pH)).sum(axis=1)
         
-        # Return the absolute value so it never goes below zero.
+        # Return the absolute value so that the minimize algorithm doesn't
+        # "minimize" to a sub optimal solution.
         return np.abs(x)
         
 
@@ -323,6 +324,80 @@ class System:
         if len(self.pHsolution.x) == 1:
             self.pH = self.pHsolution.x[0]
 
+    # Ion balance method for concentration solution method
+    def _diff_pos_neg_conc(self, concs):
+        '''Calculate the charge balance difference.
+
+        Parameters
+        ----------
+        pH : int, float, or Numpy Array
+            The pH value(s) used to calculate the different distributions of
+            positive and negative species.
+
+        Returns
+        -------
+        float or Numpy Array
+            The absolute value of the difference in concentration between the
+            positive and negatively charged species in the system. A float is
+            returned if an int or float is input as the pH: a Numpy array is
+            returned if an array of pH values is used as the input.
+        '''
+        # Calculate the h3o and oh concentrations and sum them up.
+        h3o = 10. ** (-self.pH)
+        oh = self.Kw / h3o
+        x = (h3o - oh)
+
+        # Go through all the species that were given, and sum up their
+        # charge*concentration values into our total sum. Index is used
+        # instead of simple for .. in syntax because we are working with
+        # two lists.
+        for species_index in range(len(self.species)):
+            x += (concs[species_index] * self.species[species_index].charge * self.species[species_index].alpha(self.pH)).sum()
+
+        # Return the absolute value so that the minimize algorithm doesn't
+        # "minimize" to a sub optimal solution.
+        return np.abs(x)
+
+    def conc_solve(self, guess, method='Nelder-Mead', tol=1e-5):
+        '''Solve for an array of concentrations yielding the desired pH.
+
+        The solution is derived using a simple minimization function.
+        Similar to the pHsolve method, this method attempts to minimize
+        the difference between positive and negative ions in the system,
+        but substitutes an array of concentrations for pH as x in the
+        minimization procedure.
+
+        Parameters related to guess_est in the standard pHsolve method
+        have been removed for simplicity's sake during initial dev.
+
+        Parameters
+        ----------
+
+        guess : float (default 7.0)
+            This is used as the initial guess of the pH for the system.
+
+        method : str (default 'Nelder-Mead')
+            The minimization method used to find the pH. The possible values
+            for this variable are defined in the documentation for the
+            scipy.optimize.minimize function.
+
+        tol : float (default 1e-5)
+            The tolerance used to determine convergence of the minimization
+            function.
+        '''
+
+        # There's probably a more pythonic way to set this default.
+        if guess is None:
+            guess = [0.010] * len(self.species)
+
+        self.conc_solution = spo.minimize(self._diff_pos_neg, guess,
+                                       method=method, tol=tol)
+
+        if self.conc_solution.success == False:
+            print('Warning: Unsuccessful pH optimization!')
+            print(self.conc_solution.message)
+        else:
+            self.target_concs = self.conc_solution.x
 
 
 if __name__ == '__main__':
