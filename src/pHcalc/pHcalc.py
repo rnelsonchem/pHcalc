@@ -1,7 +1,45 @@
 import numpy as np
 import scipy.optimize as spo
 
-class Inert:
+
+def default_conductivity():
+    return [0] * 4
+
+
+class ConductiveSpecies:
+    """A nonreactive ion class.
+
+    This object defines constants for a cubic regression of a species'
+    contribution to conductivity in a solution, and defines a simple
+    method to approximate the additional conductivity conferred by the
+    species in mS/cm. This method of approximating conductivity is not
+    scientifically rigorous, but with good regressions shows accuracy
+    within ±5% or so.
+
+    Parameters
+    ----------
+    constants : list
+        The formal charge of the ion.
+
+    Attributes
+    ----------
+    constants : list
+        The formal charge of the ion.
+
+    """
+    def __init__(self, constants=default_conductivity):
+        self.conductivity = constants
+
+    def component_cond(self, concentration):
+        # The existing classes use Molar units instead of milli molar units.
+        # Convert to milli molar units to use existing regressions.
+        working_conc = concentration * 1000
+        regression = list(self.conductivity)
+        return (regression[0] * working_conc ** 3) + (regression[1] * working_conc ** 2) + \
+               (regression[2] * working_conc) + regression[3]
+
+
+class Inert(ConductiveSpecies):
     """A nonreactive ion class.
 
     This object defines things like K+ and Cl-, which contribute to the
@@ -25,7 +63,8 @@ class Inert:
         The concentration of this species in solution.
 
     """
-    def __init__(self, charge=None, conc=None):
+    def __init__(self, charge=None, conc=None, constants=None):
+        super().__init__(constants)
         if charge == None:
             raise ValueError(
                 "The charge for this ion must be defined.")
@@ -58,8 +97,7 @@ class Inert:
         return ones
 
 
-        
-class Acid:
+class Acid(ConductiveSpecies):
     '''An acidic species class.
 
     This object is used to calculate a number of parameters related to a weak
@@ -93,7 +131,8 @@ class Acid:
     examples.
 
     '''
-    def __init__(self, Ka=None, pKa=None, charge=None, conc=None):
+    def __init__(self, Ka=None, pKa=None, charge=None, conc=None, constants=None):
+        super().__init__(constants)
         # Do a couple quick checks to make sure that everything has been
         # defined.
         if Ka == None and pKa == None:
@@ -259,7 +298,8 @@ class System:
             else:
                 x += (s.conc*s.charge*s.alpha(pH)).sum(axis=1)
         
-        # Return the absolute value so it never goes below zero.
+        # Return the absolute value so that the minimize algorithm doesn't
+        # "minimize" to a sub optimal solution.
         return np.abs(x)
         
 
@@ -323,6 +363,220 @@ class System:
         if len(self.pHsolution.x) == 1:
             self.pH = self.pHsolution.x[0]
 
+    # Ion balance method for concentration solution method
+    def _diff_pos_neg_conc(self, concs):
+        '''Calculate the charge balance difference.
+
+        Parameters
+        ----------
+        concs : list or Numpy Array
+            The concentrations for each species in the system
+
+        Returns
+        -------
+        float or Numpy Array
+            The absolute value of the difference in concentration between the
+            positive and negatively charged species in the system. A float is
+            returned if an int or float is input as the pH: a Numpy array is
+            returned if an array of pH values is used as the input.
+        '''
+        # Calculate the h3o and oh concentrations and sum them up.
+        h3o = 10. ** (-self.pH)
+        oh = self.Kw / h3o
+        x = (h3o - oh)
+
+        # Go through all the species that were given, and sum up their
+        # charge*concentration values into our total sum. Index is used
+        # instead of simple for .. in syntax because we are working with
+        # two lists.
+        for species_index in range(len(self.species)):
+            x += (concs[species_index] * self.species[species_index].charge * self.species[species_index].alpha(self.pH)).sum()
+
+        # Return the absolute value so that the minimize algorithm doesn't
+        # "minimize" to a sub optimal solution.
+        return np.abs(x)
+
+    def cond_solve(self, concs=None):
+        '''Calculate the charge balance difference.
+
+        Parameters
+        ----------
+        concs : list or Numpy Array
+            The concentrations for each species in the system
+
+        Returns
+        -------
+        float or Numpy Array
+            The absolute value of the difference in concentration between the
+            positive and negatively charged species in the system. A float is
+            returned if an int or float is input as the pH: a Numpy array is
+            returned if an array of pH values is used as the input.
+        '''
+        x = 0.0
+
+        # Sum up the conductivity components of all species in the system at the
+        # concs to be assessed.
+        for species_index in range(len(self.species)):
+            if concs is not None:
+                x += self.species[species_index].component_cond(concs[species_index])
+            else:
+                x += self.species[species_index].component_cond(self.species[species_index].conc)
+
+        self.mS = x
+
+    def _diff_cond(self, concs, target):
+        self.cond_solve(concs)
+        return np.abs(self.mS - target)
+
+    def _diff_complete(self, concs, cond_target):
+        # Weight the value of _diff_pos_neg_conc to ensure that pH is accounted for adequately
+        return self._diff_cond(concs, cond_target) + 10000 * self._diff_pos_neg_conc(concs)
+
+    def conc_solve(self, target_ph, method='Nelder-Mead', tol=1e-5, guess=None):
+        '''Solve for an array of concentrations yielding the desired pH.
+
+        The solution is derived using a simple minimization function.
+        Similar to the pHsolve method, this method attempts to minimize
+        the difference between positive and negative ions in the system,
+        but substitutes an array of concentrations for pH as x in the
+        minimization procedure.
+
+        Parameters related to guess_est in the standard pHsolve method
+        have been removed for simplicity's sake during initial dev.
+
+        Parameters
+        ----------
+
+        guess : float (default 7.0)
+            This is a list defining the concentrations for each species to use
+            for an initial guess.
+
+        target_ph : float
+            This is the pH for which the method should identify a combination
+            of concentration values for the species in the system.
+
+        method : str (default 'Nelder-Mead')
+            The minimization method used to find the concs. The possible values
+            for this variable are defined in the documentation for the
+            scipy.optimize.minimize function.
+
+        tol : float (default 1e-5)
+            The tolerance used to determine convergence of the minimization
+            function.
+        '''
+
+        self.pH = target_ph
+        # There's probably a more pythonic way to set this default.
+        if guess is None:
+            guess = [0.010] * len(self.species)
+
+        conc_bounds = [(0.0, 3.5)] * len(self.species)
+        self.conc_solution = spo.minimize(self._diff_pos_neg_conc, guess,
+                                       method=method, tol=tol, bounds=conc_bounds)
+
+        if self.conc_solution.success == False:
+            print('Warning: Unsuccessful pH optimization!')
+            print(self.conc_solution.message)
+        else:
+            self.target_concs = self.conc_solution.x
+
+    # TODO Rewrite this whole function
+    def conc_solve_cond(self, guess, target_cond, method='Nelder-Mead', tol=1e-5):
+        '''Solve for an array of concentrations yielding the desired pH.
+
+        The solution is derived using a simple minimization function.
+        The function to evaluate simply calculates the conductivity of
+        a system of chemicals, and then takes the absolute value of the
+        difference between the target_cond parameter and the predicted
+        conductivity of the system defined by an array of concentrations.
+
+        Parameters
+        ----------
+
+        guess : float (default [0.010] * len(self.species))
+            This is a list defining the concentrations for each species to use
+            for an initial guess.
+
+        target_cond : float
+            This is the conductivity for which the method should identify a combination
+            of concentration values for the species in the system.
+
+        method : str (default 'Nelder-Mead')
+            The minimization method used to find the concs. The possible values
+            for this variable are defined in the documentation for the
+            scipy.optimize.minimize function.
+
+        tol : float (default 1e-5)
+            The tolerance used to determine convergence of the minimization
+            function.
+        '''
+
+        # There's probably a more pythonic way to set this default.
+        if guess is None:
+            guess = [0.010] * len(self.species)
+
+        conc_bounds = [(0.010, 3.5)] * len(self.species)
+        self.conc_solution = spo.minimize(self._diff_cond, args=(guess, target_cond),
+                                       method=method, tol=tol, bounds=conc_bounds)
+
+        if self.conc_solution.success == False:
+            print('Warning: Unsuccessful conductivity optimization!')
+            print(self.conc_solution.message)
+        else:
+            self.target_concs = self.conc_solution.x
+
+    # TODO Rewrite this whole function
+    def conc_solve_complete(self, target_ph, target_cond, method='Nelder-Mead', tol=1e-5, guess=None):
+        '''Solve for an array of concentrations yielding the desired pH
+        and conductivity.
+
+        The solution is derived using a simple minimization function.
+        The value to be minimized is the sum of error in positive and
+        negative ion concentration in solution, and deviation of
+        conductivity from the target value.
+
+        Parameters related to guess_est in the standard pHsolve method
+        have been removed for simplicity's sake during initial dev.
+
+        Parameters
+        ----------
+
+        guess : float (default [0.010] * len(self.species))
+            This is a list defining the concentrations for each species to use
+            for an initial guess.
+
+        target_ph : float
+            This is the pH for which the method should identify a combination
+            of concentration values for the species in the system.
+
+        target_cond : float
+            This is the conductivity for which the method should identify a combination
+            of concentration values for the species in the system.
+
+        method : str (default 'Nelder-Mead')
+            The minimization method used to find the concs. The possible values
+            for this variable are defined in the documentation for the
+            scipy.optimize.minimize function.
+
+        tol : float (default 1e-5)
+            The tolerance used to determine convergence of the minimization
+            function.
+        '''
+
+        self.pH = target_ph
+        # There's probably a more pythonic way to set this default.
+        if guess is None:
+            guess = [0.010] * len(self.species)
+
+        conc_bounds = [(0.010, 3.5)] * len(self.species)
+        self.conc_solution = spo.minimize(self._diff_complete, guess, args=(target_cond),
+                                          method=method, tol=tol, bounds=conc_bounds)
+
+        if self.conc_solution.success == False:
+            print('Warning: Unsuccessful pH optimization!')
+            print(self.conc_solution.message)
+        else:
+            self.target_concs = self.conc_solution.x
 
 
 if __name__ == '__main__':
@@ -355,6 +609,31 @@ if __name__ == '__main__':
     s.pHsolve()
     print('(NH4)3PO4 1e-3 M pH = ', s.pH)
     print()
+
+    # Test ability to solve for a buffer satisfying conductivity
+    # and pH target constraints.
+    a = Acid(pKa=[8.06], charge=1, conc=0.01, constants=[0.0, 0.0, 0.0002, 0])
+    b = Acid(pKa=[4.75], charge=0, conc=0.05, constants=[0.0, 0.0, 0.0064, 0])
+    c = Acid(pKa=[0], charge=1, conc=0.2, constants=[0.0000000002, -0.00001, 0.1095, 0.0])
+    s = System(a, b, c)
+    s.pHsolve()
+    s.cond_solve()
+    print('Test Buffer pH = ', s.pH)
+    print('Test Buffer mS = ', s.mS)
+    print()
+    print('Solving for pH 3.2 and 55mS')
+    s.conc_solve_complete(3.2, 55.0)
+    print('Target Concentrations = ', s.target_concs)
+    suggested_concs = s.target_concs
+    # Verify the chemical properties of the suggested buffer
+    a = Acid(pKa=[8.06], charge=1, conc=suggested_concs[0], constants=[0.0, 0.0, 0.0002, 0])
+    b = Acid(pKa=[4.75], charge=0, conc=suggested_concs[1], constants=[0.0, 0.0, 0.0064, 0])
+    c = Acid(pKa=[0], charge=1, conc=suggested_concs[2], constants=[0.0000000002, -0.00001, 0.1095, 0.0])
+    s = System(a, b, c)
+    s.pHsolve()
+    s.cond_solve()
+    print('Suggested Buffer pH = ', s.pH)
+    print('Suggested Buffer mS = ', s.mS)
 
     try:
         import matplotlib.pyplot as plt
