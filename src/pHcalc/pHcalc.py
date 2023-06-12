@@ -396,7 +396,7 @@ class System:
         if guess is None:
             guess = [0.010] * len(self.species)
 
-        self.conc_solution = spo.minimize(self._diff_pos_neg, guess,
+        self.conc_solution = spo.minimize(self._diff_pos_neg_conc, guess,
                                        method=method, tol=tol)
 
         if self.conc_solution.success == False:
@@ -436,6 +436,18 @@ if __name__ == '__main__':
     s.pHsolve()
     print('(NH4)3PO4 1e-3 M pH = ', s.pH)
     print()
+
+    # As a test case for concentration solution, solve for
+    # concentrations yielding pH 4.0 for combinations of NH4
+    # and H3PO4
+    s.conc_solve([0.002, 0.05], 4.0)
+    print('Suggested concentrations for pH 4.0 = ', s.target_concs)
+    # Confirm that the solution given evaluates to the target pH.
+    a = Acid(pKa=[2.148, 7.198, 12.375], charge=0, conc=s.target_concs[0])
+    b = Acid(pKa=9.498, charge=1, conc=s.target_concs[1])
+    s = System(a, b)
+    s.pHsolve()
+    print('Suggested concentrations yield pH = ', s.pH)
 
     try:
         import matplotlib.pyplot as plt
