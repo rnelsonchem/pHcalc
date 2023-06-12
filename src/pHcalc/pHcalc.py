@@ -358,7 +358,7 @@ class System:
         # "minimize" to a sub optimal solution.
         return np.abs(x)
 
-    def conc_solve(self, guess, method='Nelder-Mead', tol=1e-5):
+    def conc_solve(self, guess, target_ph, method='Nelder-Mead', tol=1e-5):
         '''Solve for an array of concentrations yielding the desired pH.
 
         The solution is derived using a simple minimization function.
@@ -374,10 +374,15 @@ class System:
         ----------
 
         guess : float (default 7.0)
-            This is used as the initial guess of the pH for the system.
+            This is a list defining the concentrations for each species to use
+            for an initial guess.
+
+        target_ph : float
+            This is the pH for which the method should identify a combination
+            of concentration values for the species in the system.
 
         method : str (default 'Nelder-Mead')
-            The minimization method used to find the pH. The possible values
+            The minimization method used to find the concs. The possible values
             for this variable are defined in the documentation for the
             scipy.optimize.minimize function.
 
@@ -386,6 +391,7 @@ class System:
             function.
         '''
 
+        self.pH = target_ph
         # There's probably a more pythonic way to set this default.
         if guess is None:
             guess = [0.010] * len(self.species)
